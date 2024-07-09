@@ -1,0 +1,19 @@
+#root {
+	text-align: center;
+}
+
+ul {
+	padding-inline-start: 0;
+}
+
+li {
+	text-align: left;
+	list-style-type: none;
+	border: 1px solid black;
+	margin-bottom: 20px;
+	padding: 20px;
+}
+
+h3 {
+	margin-top: 0;
+}
