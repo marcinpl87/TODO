@@ -1,4 +1,10 @@
+body {
+	background-color: black;
+	color: white;
+}
+
 #root {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
 	text-align: center;
 }
 
@@ -9,7 +15,7 @@ ul {
 li {
 	text-align: left;
 	list-style-type: none;
-	border: 1px solid black;
+	border: 1px solid white;
 	margin-bottom: 20px;
 	padding: 20px;
 }

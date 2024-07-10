@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useRef, ChangeEvent, FormEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import './index.css';
 
@@ -216,31 +216,28 @@ const TodoItem: React.FC<TodoItemProps> = ({
 					<h3>{todo.title}</h3>
 					<p>{todo.description}</p>
 					<p>
-						{todo.estimatedTime > 60 ? (
-							<>{Math.round(todo.estimatedTime / 60)}m</>
-						) : (
-							<>{todo.estimatedTime}s</>
+						{!todo.isDone && (
+							<>
+								<Timer sec={todo.estimatedTime} />{' '}
+							</>
 						)}
+						<button onClick={toggleDone}>
+							{todo.isDone ? 'Un-done' : 'DONE!'}
+						</button>{' '}
+						<button onClick={handleEdit}>Edit</button>{' '}
+						<button onClick={handleRemove}>Remove</button>
 					</p>
-					<button onClick={toggleDone}>
-						{todo.isDone ? 'Un-done' : 'DONE!'}
-					</button>{' '}
-					<button onClick={handleEdit}>Edit</button>{' '}
-					<button onClick={handleRemove}>Remove</button>
 				</div>
 			)}
 		</li>
 	);
 };
 
-const Timer = () => {
+const Timer: React.FC<{ sec: number }> = ({ sec }) => {
 	// We need ref in this, because we are dealing
 	// with JS setInterval to keep track of it and
 	// stop it when needed
 	const Ref = useRef<number | null>(null);
-
-	// The state for our timer
-	const [timer, setTimer] = useState('00:00:00');
 
 	const getTimeRemaining = (e: Date) => {
 		const total =
@@ -256,19 +253,30 @@ const Timer = () => {
 		};
 	};
 
-	const startTimer = (e: Date) => {
-		let { total, hours, minutes, seconds } = getTimeRemaining(e);
-		if (total >= 0) {
-			// update the timer
-			// check if less than 10 then we need to
-			// add '0' at the beginning of the variable
-			setTimer(
-				(hours > 9 ? hours : '0' + hours) +
+	const getTimeRemainingToTimerString = (e: Date) => {
+		const { total, hours, minutes, seconds } = getTimeRemaining(e);
+		// check if less than 10 then we need to
+		// add '0' at the beginning of the variable
+		return total >= 0
+			? (hours > 9 ? hours : '0' + hours) +
 					':' +
 					(minutes > 9 ? minutes : '0' + minutes) +
 					':' +
-					(seconds > 9 ? seconds : '0' + seconds),
-			);
+					(seconds > 9 ? seconds : '0' + seconds)
+			: '00:00:00';
+	};
+
+	const getDeadTime = (seconds: number) => {
+		const deadline = new Date();
+		deadline.setSeconds(deadline.getSeconds() + seconds);
+		return deadline;
+	};
+
+	const startTimer = (e: Date) => {
+		const { total } = getTimeRemaining(e);
+		if (total >= 0) {
+			// update the timer
+			setTimer(getTimeRemainingToTimerString(e));
 		} else {
 			alert('Time is over!');
 			clearInterval(Ref?.current || undefined);
@@ -276,69 +284,40 @@ const Timer = () => {
 	};
 
 	const clearTimer = (e: Date) => {
-		// If you adjust it you should also need to
-		// adjust the Endtime formula we are about
-		// to code next
-		setTimer('00:00:10');
-
+		setTimer(getTimeRemainingToTimerString(e));
 		// If you try to remove this line the
 		// updating of timer Variable will be
 		// after 1000ms or 1sec
-		if (Ref.current) clearInterval(Ref.current);
+		if (Ref.current) {
+			clearInterval(Ref.current);
+		}
 		const id = setInterval(() => {
 			startTimer(e);
 		}, 1000);
 		Ref.current = id;
 	};
 
-	const getDeadTime = () => {
-		let deadline = new Date();
-
-		// This is where you need to adjust if
-		// you entend to add more time
-		deadline.setSeconds(deadline.getSeconds() + 10);
-		return deadline;
-	};
-
-	// We can use useEffect so that when the component
-	// mount the timer will start as soon as possible
-
-	// We put empty array to act as componentDid
-	// mount only
-	useEffect(() => {
-		clearTimer(getDeadTime());
-	}, []);
-
-	// Another way to call the clearTimer() to start
-	// the countdown is via action event from the
-	// button first we create function to be called
-	// by the button
 	const onClickReset = () => {
-		clearTimer(getDeadTime());
+		// -1 becaise we want to see timer starts immediately after click on a button
+		clearTimer(getDeadTime(sec - 1));
 	};
+
+	const [timer, setTimer] = useState(
+		getTimeRemainingToTimerString(getDeadTime(sec)),
+	);
 
 	return (
 		<>
 			<h2>{timer}</h2>
-			<button onClick={onClickReset}>Reset</button>
+			<button onClick={onClickReset}>Start</button>
 		</>
 	);
 };
 
-function App() {
-	const [count, setCount] = useState(0);
-
-	return (
-		<>
-			<Todo />
-			<Timer />
-			<div className="card">
-				<button onClick={() => setCount(count => count + 1)}>
-					count is {count}
-				</button>
-			</div>
-		</>
-	);
-}
+const App: React.FC = () => (
+	<>
+		<Todo />
+	</>
+);
 
 export default App;
