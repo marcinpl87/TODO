@@ -8,6 +8,7 @@ export default defineConfig({
 		host: '10.0.2.15',
 		port: 2000,
 	},
+	base: '',
 	build: {
 		outDir: 'docs',
 	},

@@ -8,6 +8,10 @@ body {
 	text-align: center;
 }
 
+a {
+	color: white;
+}
+
 ul {
 	padding-inline-start: 0;
 }
