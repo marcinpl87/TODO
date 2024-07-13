@@ -8,8 +8,23 @@ body {
 	text-align: center;
 }
 
+input,
+textarea {
+	width: 300px;
+	margin-bottom: 10px;
+	padding: 10px;
+}
+
+button {
+	font-family: monospace;
+}
+
 a {
 	color: white;
+}
+
+p {
+	white-space: pre-line;
 }
 
 ul {
@@ -21,9 +36,21 @@ li {
 	list-style-type: none;
 	border: 1px solid white;
 	margin-bottom: 20px;
-	padding: 20px;
+	padding: 20px 20px 0;
 }
 
 h3 {
 	margin-top: 0;
+}
+
+.export-import {
+	div {
+		font-size: 7px;
+		line-height: 7px;
+		word-break: break-all;
+		font-family: monospace;
+	}
+	button {
+		margin-bottom: 20px;
+	}
 }

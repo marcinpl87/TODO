@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Link } from 'react-router-dom';
 import './index.css';
 import { useLocalStorage } from './hooks';
+import { LS_KEY_PROJECTS, LS_KEY_TODOS } from './consts';
+import type { Todo } from './types';
 
 type Project = {
 	id: string;
@@ -107,9 +109,13 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
 
 const App: React.FC = () => {
 	const [projects, setProjects] = useLocalStorage<Project[]>(
-		'todo-app-projects',
+		LS_KEY_PROJECTS,
 		[],
 	);
+	const [todos, setTodos] = useLocalStorage<Todo[]>(LS_KEY_TODOS, []);
+	const exportData: Record<string, object> = {};
+	exportData[LS_KEY_PROJECTS] = projects;
+	exportData[LS_KEY_TODOS] = todos;
 
 	const addProject = (project: Project) => {
 		setProjects([...projects, project]);
@@ -127,8 +133,21 @@ const App: React.FC = () => {
 		setProjects(projects.filter(project => project.id !== id));
 	};
 
+	const onExport = () => {
+		navigator.clipboard.writeText(JSON.stringify(exportData));
+	};
+
+	const onImport = () => {
+		const textEl = document?.getElementById('import') as HTMLInputElement;
+		if (textEl?.value) {
+			const data = JSON.parse(textEl.value);
+			setProjects(data[LS_KEY_PROJECTS]);
+			setTodos(data[LS_KEY_TODOS]);
+		}
+	};
+
 	return (
-		<div>
+		<>
 			<h1>Projects</h1>
 			<ProjectForm addProject={addProject} />
 			<ul>
@@ -141,7 +160,23 @@ const App: React.FC = () => {
 					/>
 				))}
 			</ul>
-		</div>
+			<h1>Export / import</h1>
+			<ul className="export-import">
+				<li>
+					<div>{JSON.stringify(exportData)}</div>
+					<br />
+					<button onClick={onExport}>Copy to clipboard</button>
+				</li>
+				<li>
+					<textarea
+						id="import"
+						placeholder="Paste exported JSON data here"
+					></textarea>
+					<br />
+					<button onClick={onImport}>Import</button>
+				</li>
+			</ul>
+		</>
 	);
 };
 
