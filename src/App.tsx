@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Link } from 'react-router-dom';
 import './index.css';
@@ -108,29 +108,33 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
 };
 
 const App: React.FC = () => {
-	const [projects, setProjects] = useLocalStorage<Project[]>(
+	const [, forceUpdate] = useReducer(x => x + 1, 0);
+	const [getLsProjects, setLsProjects] = useLocalStorage<Project[]>(
 		LS_KEY_PROJECTS,
-		[],
+		forceUpdate,
 	);
-	const [todos, setTodos] = useLocalStorage<Todo[]>(LS_KEY_TODOS, []);
+	const [getLsTodos, setLsTodos] = useLocalStorage<Todo[]>(
+		LS_KEY_TODOS,
+		forceUpdate,
+	);
 	const exportData: Record<string, object> = {};
-	exportData[LS_KEY_PROJECTS] = projects;
-	exportData[LS_KEY_TODOS] = todos;
+	exportData[LS_KEY_PROJECTS] = getLsProjects();
+	exportData[LS_KEY_TODOS] = getLsTodos;
 
 	const addProject = (project: Project) => {
-		setProjects([...projects, project]);
+		setLsProjects([...getLsProjects(), project]);
 	};
 
 	const updateProject = (updatedProject: Project) => {
-		setProjects(
-			projects.map(project =>
+		setLsProjects(
+			getLsProjects().map(project =>
 				project.id === updatedProject.id ? updatedProject : project,
 			),
 		);
 	};
 
 	const removeProject = (id: string) => {
-		setProjects(projects.filter(project => project.id !== id));
+		setLsProjects(getLsProjects().filter(project => project.id !== id));
 	};
 
 	const onExport = () => {
@@ -141,8 +145,12 @@ const App: React.FC = () => {
 		const textEl = document?.getElementById('import') as HTMLInputElement;
 		if (textEl?.value) {
 			const data = JSON.parse(textEl.value);
-			setProjects(data[LS_KEY_PROJECTS]);
-			setTodos(data[LS_KEY_TODOS]);
+			if (data[LS_KEY_PROJECTS]) {
+				setLsProjects(data[LS_KEY_PROJECTS]);
+			}
+			if (data[LS_KEY_TODOS]) {
+				setLsTodos(data[LS_KEY_TODOS]);
+			}
 		}
 	};
 
@@ -151,7 +159,7 @@ const App: React.FC = () => {
 			<h1>Projects</h1>
 			<ProjectForm addProject={addProject} />
 			<ul>
-				{projects.map(project => (
+				{getLsProjects().map(project => (
 					<ProjectItem
 						key={project.id}
 						project={project}

@@ -26,25 +26,33 @@ type TodoItemProps = {
 };
 
 const Todos: React.FC = () => {
+	const [, forceUpdate] = useReducer(x => x + 1, 0);
+
 	const { projectId } = useParams();
 
-	const [todos, setTodos] = useLocalStorage<Todo[]>(LS_KEY_TODOS, []);
-	const [projects] = useLocalStorage<Todo[]>(LS_KEY_PROJECTS, []);
+	const [getLsTodos, setLsTodos] = useLocalStorage<Todo[]>(
+		LS_KEY_TODOS,
+		forceUpdate,
+	);
+	const [getLsProjects] = useLocalStorage<Todo[]>(
+		LS_KEY_PROJECTS,
+		forceUpdate,
+	);
 
 	const addTodo = (todo: Todo) => {
-		setTodos([...todos, todo]);
+		setLsTodos([...getLsTodos(), todo]);
 	};
 
 	const updateTodo = (updatedTodo: Todo) => {
-		setTodos(
-			todos.map(todo =>
+		setLsTodos(
+			getLsTodos().map(todo =>
 				todo.id === updatedTodo.id ? updatedTodo : todo,
 			),
 		);
 	};
 
 	const removeTodo = (id: string) => {
-		setTodos(todos.filter(todo => todo.id !== id));
+		setLsTodos(getLsTodos().filter(todo => todo.id !== id));
 	};
 
 	return (
@@ -55,11 +63,14 @@ const Todos: React.FC = () => {
 						<Link to="/">🗂️</Link>
 					</h1>
 					<h1>
-						{projects.filter(p => p.id === projectId)[0]?.title}
+						{
+							getLsProjects().filter(p => p.id === projectId)[0]
+								?.title
+						}
 					</h1>
 					<TodoForm addTodo={addTodo} />
 					<ul>
-						{todos
+						{getLsTodos()
 							.filter(t => t.projectId === projectId && !t.isDone)
 							.sort(
 								(a, b) =>
@@ -78,7 +89,7 @@ const Todos: React.FC = () => {
 					</ul>
 					<h1>DONE</h1>
 					<ul>
-						{todos
+						{getLsTodos()
 							.filter(t => t.projectId === projectId && t.isDone)
 							.sort(
 								(a, b) =>
@@ -355,6 +366,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 							setTimer={setTimer}
 							sec={todo.estimatedTime}
 							toggleDone={toggleDone}
+							todoTitle={todo.title}
 						/>
 					)}
 					<p>{todo.description}</p>
@@ -380,6 +392,7 @@ const Timer = forwardRef<
 		setTimer: React.Dispatch<React.SetStateAction<string>>;
 		sec: number;
 		toggleDone: () => void;
+		todoTitle: string;
 	}
 >(
 	(
@@ -392,6 +405,7 @@ const Timer = forwardRef<
 			setTimer,
 			sec,
 			toggleDone,
+			todoTitle,
 		},
 		ref,
 	) => {
@@ -411,7 +425,7 @@ const Timer = forwardRef<
 			} else {
 				if (
 					confirm(
-						'Time is over! Would you like to mark TODO as done?',
+						`Time is over! Would you like to mark TODO "${todoTitle}" as done?`,
 					)
 				) {
 					onClickStop();
