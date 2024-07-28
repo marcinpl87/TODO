@@ -7,13 +7,15 @@ import React, {
 	ChangeEvent,
 	useImperativeHandle,
 } from 'react';
+import DatePicker from 'react-datepicker';
 import { v4 as uuidv4 } from 'uuid';
 import TimeAgo from 'react-timeago';
 import { Link, useParams } from 'react-router-dom';
 import './index.css';
+import 'react-datepicker/dist/react-datepicker.css';
 import { useLocalStorage } from './hooks';
 import { LS_KEY_PROJECTS, LS_KEY_TODOS } from './consts';
-import type { Todo } from './types';
+import type { Project, Todo } from './types';
 
 type TodoFormProps = {
 	addTodo: (todo: Todo) => void;
@@ -34,10 +36,11 @@ const Todos: React.FC = () => {
 		LS_KEY_TODOS,
 		forceUpdate,
 	);
-	const [getLsProjects] = useLocalStorage<Todo[]>(
+	const [getLsProjects] = useLocalStorage<Project[]>(
 		LS_KEY_PROJECTS,
 		forceUpdate,
 	);
+	const selectedProject = getLsProjects().filter(p => p.id === projectId)[0];
 
 	const addTodo = (todo: Todo) => {
 		setLsTodos([...getLsTodos(), todo]);
@@ -62,21 +65,18 @@ const Todos: React.FC = () => {
 					<h1>
 						<Link to="/">🗂️</Link>
 					</h1>
-					<h1>
-						{
-							getLsProjects().filter(p => p.id === projectId)[0]
-								?.title
-						}
-					</h1>
+					<h1>{selectedProject?.title}</h1>
+					{selectedProject?.description && (
+						<p>{selectedProject.description}</p>
+					)}
 					<TodoForm addTodo={addTodo} />
 					<ul>
 						{getLsTodos()
 							.filter(t => t.projectId === projectId && !t.isDone)
 							.sort(
 								(a, b) =>
-									b.creationTimestamp ||
-									0 - a.creationTimestamp ||
-									0,
+									(b.creationTimestamp || 0) -
+									(a.creationTimestamp || 0),
 							)
 							.map(todo => (
 								<TodoItem
@@ -93,9 +93,8 @@ const Todos: React.FC = () => {
 							.filter(t => t.projectId === projectId && t.isDone)
 							.sort(
 								(a, b) =>
-									b.creationTimestamp ||
-									0 - a.creationTimestamp ||
-									0,
+									(b.doneTimestamp || 0) -
+									(a.doneTimestamp || 0),
 							)
 							.map(todo => (
 								<TodoItem
@@ -118,6 +117,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ addTodo }) => {
 	const [title, setTitle] = useState<string>('');
 	const [description, setDescription] = useState<string>('');
 	const [estimatedTime, setEstimatedTime] = useState<number>(0);
+	const [startDate, setStartDate] = useState<Date | null>();
 
 	const handleSubmit = (e: FormEvent) => {
 		e.preventDefault();
@@ -125,9 +125,11 @@ const TodoForm: React.FC<TodoFormProps> = ({ addTodo }) => {
 			id: uuidv4(),
 			projectId: projectId || '',
 			title,
+			date: startDate || null,
 			description,
 			estimatedTime,
 			isDone: false,
+			doneTimestamp: 0,
 			creationTimestamp: Date.now(),
 		});
 		setTitle('');
@@ -168,6 +170,16 @@ const TodoForm: React.FC<TodoFormProps> = ({ addTodo }) => {
 						required
 					/>
 					<br />
+					<DatePicker
+						selected={startDate}
+						onChange={date => setStartDate(date)}
+						showTimeSelect
+						timeFormat="HH:mm"
+						timeIntervals={15}
+						dateFormat="yyyy-MM-dd HH:mm"
+						placeholderText="Date"
+					/>
+					<br />
 					<button type="submit">Save</button>{' '}
 					<button onClick={() => setIsOpened(false)}>Cancel</button>
 				</form>
@@ -191,6 +203,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
 	const [description, setDescription] = useState<string>(todo.description);
 	const [estimatedTime, setEstimatedTime] = useState<number>(
 		todo.estimatedTime,
+	);
+	const [startDate, setStartDate] = useState<Date | null>(
+		todo.date ? new Date(todo.date || '') : null,
 	);
 
 	const getDeadTime = (seconds: number) => {
@@ -236,6 +251,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 			title,
 			description,
 			estimatedTime,
+			date: startDate,
 		});
 		if (
 			timer !== getTimeRemainingToTimerString(getDeadTime(estimatedTime))
@@ -272,6 +288,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 		updateTodo({
 			...todo,
 			isDone: !todo.isDone,
+			doneTimestamp: Date.now(),
 		});
 		setIsEditing(false);
 	};
@@ -289,13 +306,16 @@ const TodoItem: React.FC<TodoItemProps> = ({
 			{isEditing ? (
 				<div>
 					<input
+						placeholder="Title"
 						value={title}
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
 							setTitle(e.target.value)
 						}
+						required
 					/>
 					<br />
 					<textarea
+						placeholder="Description"
 						value={description}
 						onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
 							setDescription(e.target.value)
@@ -303,14 +323,28 @@ const TodoItem: React.FC<TodoItemProps> = ({
 					/>
 					<br />
 					<input
+						placeholder="Time (in seconds)"
+						type="number"
 						value={estimatedTime}
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
 							setEstimatedTime(Number(e.target.value))
 						}
 					/>
 					<br />
+					<DatePicker
+						selected={startDate}
+						onChange={date => setStartDate(date)}
+						showTimeSelect
+						timeFormat="HH:mm"
+						timeIntervals={15}
+						dateFormat="yyyy-MM-dd HH:mm"
+						placeholderText="Date"
+					/>
+					<br />
 					<button onClick={handleSave}>Save</button>{' '}
 					<button onClick={handleCancel}>Cancel</button>
+					<br />
+					<br />
 				</div>
 			) : (
 				<div>
@@ -349,6 +383,14 @@ const TodoItem: React.FC<TodoItemProps> = ({
 								<TimeAgo
 									date={new Date(todo.creationTimestamp)}
 								/>
+								{todo.isDone && todo.doneTimestamp && (
+									<>
+										{' - '}
+										<TimeAgo
+											date={new Date(todo.doneTimestamp)}
+										/>
+									</>
+								)}
 								)
 							</>
 						)}
@@ -370,6 +412,13 @@ const TodoItem: React.FC<TodoItemProps> = ({
 						/>
 					)}
 					<p>{todo.description}</p>
+					{todo.date && (
+						<p>
+							{new Date(todo.date?.toString() || '')
+								.toLocaleString('sv-SE')
+								.slice(0, -3)}
+						</p>
+					)}
 				</div>
 			)}
 		</li>

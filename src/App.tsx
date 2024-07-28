@@ -4,12 +4,7 @@ import { Link } from 'react-router-dom';
 import './index.css';
 import { useLocalStorage } from './hooks';
 import { LS_KEY_PROJECTS, LS_KEY_TODOS } from './consts';
-import type { Todo } from './types';
-
-type Project = {
-	id: string;
-	title: string;
-};
+import type { Project, Todo } from './types';
 
 type ProjectFormProps = {
 	addProject: (project: Project) => void;
@@ -22,30 +17,49 @@ type ProjectItemProps = {
 };
 
 const ProjectForm: React.FC<ProjectFormProps> = ({ addProject }) => {
+	const [isOpened, setIsOpened] = useState<boolean>(false);
 	const [title, setTitle] = useState<string>('');
+	const [description, setDescription] = useState<string>('');
 
 	const handleSubmit = (e: FormEvent) => {
 		e.preventDefault();
 		addProject({
 			id: uuidv4(),
 			title,
+			description,
 		});
 		setTitle('');
 	};
 
 	return (
-		<form onSubmit={handleSubmit}>
-			<input
-				type="text"
-				placeholder="Title"
-				value={title}
-				onChange={(e: ChangeEvent<HTMLInputElement>) =>
-					setTitle(e.target.value)
-				}
-				required
-			/>{' '}
-			<button type="submit">Add</button>
-		</form>
+		<>
+			{isOpened ? (
+				<form onSubmit={handleSubmit}>
+					<input
+						type="text"
+						placeholder="Title"
+						value={title}
+						onChange={(e: ChangeEvent<HTMLInputElement>) =>
+							setTitle(e.target.value)
+						}
+						required
+					/>
+					<br />
+					<textarea
+						placeholder="Description"
+						value={description}
+						onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+							setDescription(e.target.value)
+						}
+					/>
+					<br />
+					<button type="submit">Save</button>{' '}
+					<button onClick={() => setIsOpened(false)}>Cancel</button>
+				</form>
+			) : (
+				<button onClick={() => setIsOpened(true)}>New Project</button>
+			)}
+		</>
 	);
 };
 
@@ -56,6 +70,7 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
 }) => {
 	const [isEditing, setIsEditing] = useState<boolean>(false);
 	const [title, setTitle] = useState<string>(project.title);
+	const [description, setDescription] = useState<string>(project.description);
 
 	const handleEdit = () => {
 		setIsEditing(true);
@@ -86,9 +101,21 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
 							setTitle(e.target.value)
 						}
-					/>{' '}
+						required
+					/>
+					<br />
+					<textarea
+						placeholder="Description"
+						value={description}
+						onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+							setDescription(e.target.value)
+						}
+					/>
+					<br />
 					<button onClick={handleSave}>Save</button>{' '}
 					<button onClick={handleCancel}>Cancel</button>
+					<br />
+					<br />
 				</div>
 			) : (
 				<div>
@@ -97,6 +124,7 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
 							{project.title}
 						</Link>
 					</h3>
+					{project.description && <p>{project.description}</p>}
 					<p>
 						<button onClick={handleEdit}>Edit</button>{' '}
 						<button onClick={handleRemove}>Remove</button>
@@ -119,7 +147,7 @@ const App: React.FC = () => {
 	);
 	const exportData: Record<string, object> = {};
 	exportData[LS_KEY_PROJECTS] = getLsProjects();
-	exportData[LS_KEY_TODOS] = getLsTodos;
+	exportData[LS_KEY_TODOS] = getLsTodos();
 
 	const addProject = (project: Project) => {
 		setLsProjects([...getLsProjects(), project]);
