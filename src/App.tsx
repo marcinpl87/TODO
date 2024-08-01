@@ -27,8 +27,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ addProject }) => {
 			id: uuidv4(),
 			title,
 			description,
+			creationTimestamp: Date.now(),
 		});
 		setTitle('');
+		setIsOpened(false);
 	};
 
 	return (
@@ -80,6 +82,7 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
 		updateProject({
 			...project,
 			title,
+			description,
 		});
 		setIsEditing(false);
 	};
@@ -187,14 +190,20 @@ const App: React.FC = () => {
 			<h1>Projects</h1>
 			<ProjectForm addProject={addProject} />
 			<ul>
-				{getLsProjects().map(project => (
-					<ProjectItem
-						key={project.id}
-						project={project}
-						updateProject={updateProject}
-						removeProject={removeProject}
-					/>
-				))}
+				{getLsProjects()
+					.sort(
+						(a, b) =>
+							(b.creationTimestamp || 0) -
+							(a.creationTimestamp || 0),
+					)
+					.map(project => (
+						<ProjectItem
+							key={project.id}
+							project={project}
+							updateProject={updateProject}
+							removeProject={removeProject}
+						/>
+					))}
 			</ul>
 			<h1>Export / import</h1>
 			<ul className="export-import">
